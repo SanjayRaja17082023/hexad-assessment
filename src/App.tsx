@@ -3,6 +3,7 @@ import './App.css';
 import BookList from './components/BookList';
 import BorrowReturn from './components/BorrowReturn';
 import Login from './components/Login';
+import AdminPanel from './components/AdminPanel';
 import { useAuth } from './context/AuthContext';
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
             </div>
             <BookList />
             <BorrowReturn />
-            {/* Admin panel will be added for admin role */}
+            {user.role === 'admin' && <AdminPanel />}
           </>
         ) : (
           <Login />
