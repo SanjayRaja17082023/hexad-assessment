@@ -19,8 +19,14 @@ const BorrowReturn: React.FC = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/books').then(res => res.json()),
-      fetch(`/api/user?id=${MOCK_USER_ID}`).then(res => res.json()),
+      fetch('/api/books').then(async res => {
+        if (!res.ok) throw new Error('Error loading books');
+        return res.json();
+      }),
+      fetch(`/api/user?id=${MOCK_USER_ID}`).then(async res => {
+        if (!res.ok) throw new Error('Error loading user');
+        return res.json();
+      }),
     ])
       .then(([booksData, userData]) => {
         setBooks(booksData);
@@ -28,7 +34,7 @@ const BorrowReturn: React.FC = () => {
         setLoading(false);
       })
       .catch(err => {
-        setError('Failed to load data');
+        setError(err.message || 'Failed to load data');
         setLoading(false);
       });
   }, []);
@@ -42,12 +48,15 @@ const BorrowReturn: React.FC = () => {
         body: JSON.stringify({ userId: MOCK_USER_ID, bookId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      setBooks(books => books.map(b => b.id === bookId ? { ...b, stock: b.stock - 1 } : b));
+      if (!res.ok) {
+        setActionMsg(data.message || 'Error borrowing book');
+        return;
+      }
+      setBooks(books => books.map(b => b.id === bookId ? { ...b, stock: Math.max(0, b.stock - 1) } : b));
       setUser(u => u ? { ...u, borrowed: [...u.borrowed, bookId] } : u);
       setActionMsg('Book borrowed successfully!');
     } catch (err: any) {
-      setActionMsg(err.message);
+      setActionMsg(err.message || 'Error borrowing book');
     }
   };
 
@@ -60,12 +69,15 @@ const BorrowReturn: React.FC = () => {
         body: JSON.stringify({ userId: MOCK_USER_ID, bookId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      setBooks(books => books.map(b => b.id === bookId ? { ...b, stock: b.stock + 1 } : b));
+      if (!res.ok) {
+        setActionMsg(data.message || 'Error returning book');
+        return;
+      }
+      setBooks(books => books.map(b => b.id === bookId ? { ...b, stock: Math.max(0, b.stock + 1) } : b));
       setUser(u => u ? { ...u, borrowed: u.borrowed.filter(id => id !== bookId) } : u);
       setActionMsg('Book returned successfully!');
     } catch (err: any) {
-      setActionMsg(err.message);
+      setActionMsg(err.message || 'Error returning book');
     }
   };
 

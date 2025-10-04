@@ -12,11 +12,20 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/admin/inventory').then(res => res.json()),
-      fetch('/api/admin/borrowed').then(res => res.json()),
+      fetch('/api/admin/inventory').then(async res => {
+        if (!res.ok) throw new Error('Error loading inventory');
+        return res.json();
+      }),
+      fetch('/api/admin/borrowed').then(async res => {
+        if (!res.ok) throw new Error('Error loading borrowed books');
+        return res.json();
+      }),
     ]).then(([booksData, borrowedData]) => {
       setBooks(booksData);
       setBorrowed(borrowedData);
+      setLoading(false);
+    }).catch(err => {
+      setMsg(err.message || 'Failed to load admin data');
       setLoading(false);
     });
   }, [msg]);
@@ -24,30 +33,40 @@ const AdminPanel: React.FC = () => {
   const handleAddBook = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
-    const res = await fetch('/api/admin/add-book', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newBook),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch('/api/admin/add-book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBook),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setMsg(data.message || 'Failed to add book');
+        return;
+      }
       setMsg('Book added!');
       setNewBook({ title: '', author: '', stock: 1 });
-    } else {
-      setMsg('Failed to add book');
+    } catch (err: any) {
+      setMsg(err.message || 'Failed to add book');
     }
   };
 
   const handleUpdateStock = async (bookId: string, stock: number) => {
     setMsg(null);
-    const res = await fetch('/api/admin/update-stock', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookId, stock }),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch('/api/admin/update-stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookId, stock }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setMsg(data.message || 'Failed to update stock');
+        return;
+      }
       setMsg('Stock updated!');
-    } else {
-      setMsg('Failed to update stock');
+    } catch (err: any) {
+      setMsg(err.message || 'Failed to update stock');
     }
   };
 
